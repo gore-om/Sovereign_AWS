@@ -1,0 +1,104 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  AWS_REGION: 'us-east-1'
+  TF_DIR: '.'
+  BACKEND_IMAGE: 'expenses-backend'
+  FRONTEND_IMAGE: 'expenses-frontend'
+
+stages:
+- stage: TerraformPlan
+  displayName: Terraform Plan
+  jobs:
+  - job: plan
+    steps:
+    - checkout: self
+
+    - script: |
+        terraform init
+        terraform fmt -check -recursive
+        terraform validate
+        terraform plan
+      displayName: Terraform Init Validate Plan
+      workingDirectory: $(TF_DIR)
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_DEFAULT_REGION: $(AWS_REGION)
+        TF_VAR_db_password: $(DB_PASSWORD)
+
+- stage: TerraformApply
+  displayName: Terraform Apply Infra
+  dependsOn: TerraformPlan
+  jobs:
+  - job: apply
+    steps:
+    - checkout: self
+
+    - script: |
+        terraform init
+        terraform apply -auto-approve
+      displayName: Terraform Apply
+      workingDirectory: $(TF_DIR)
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_DEFAULT_REGION: $(AWS_REGION)
+        TF_VAR_db_password: $(DB_PASSWORD)
+
+- stage: BuildAndPush
+  displayName: Build and Push Docker Images
+  dependsOn: TerraformApply
+  jobs:
+  - job: docker
+    steps:
+    - checkout: self
+
+    - script: |
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        ECR_URL="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+
+        docker build -t $BACKEND_IMAGE:latest ./app/backend
+        docker tag $BACKEND_IMAGE:latest $ECR_URL/$BACKEND_IMAGE:latest
+        docker push $ECR_URL/$BACKEND_IMAGE:latest
+
+        docker build -t $FRONTEND_IMAGE:latest ./app/frontend
+        docker tag $FRONTEND_IMAGE:latest $ECR_URL/$FRONTEND_IMAGE:latest
+        docker push $ECR_URL/$FRONTEND_IMAGE:latest
+      displayName: Build and Push to ECR
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_REGION: $(AWS_REGION)
+
+- stage: DeployECS
+  displayName: Force ECS Deployment
+  dependsOn: BuildAndPush
+  jobs:
+  - job: deploy
+    steps:
+    - script: |
+        aws ecs update-service \
+          --cluster expenses-cluster \
+          --service expenses-backend-service \
+          --force-new-deployment \
+          --region $AWS_REGION
+
+        aws ecs update-service \
+          --cluster expenses-cluster \
+          --service expenses-frontend-service \
+          --force-new-deployment \
+          --region $AWS_REGION
+      displayName: Force New ECS Deployment
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_REGION: $(AWS_REGION)
