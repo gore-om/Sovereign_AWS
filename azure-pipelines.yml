@@ -7,7 +7,7 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-- group: aws-secrets
+- group: aws-secret
 
 - name: AWS_REGION
   value: us-east-1
