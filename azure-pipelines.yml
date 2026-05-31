@@ -7,10 +7,19 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  AWS_REGION: 'us-east-1'
-  TF_DIR: '.'
-  BACKEND_IMAGE: 'expenses-backend'
-  FRONTEND_IMAGE: 'expenses-frontend'
+- group: aws-secrets
+
+- name: AWS_REGION
+  value: us-east-1
+
+- name: TF_DIR
+  value: '.'
+
+- name: BACKEND_IMAGE
+  value: expenses-backend
+
+- name: FRONTEND_IMAGE
+  value: expenses-frontend
 
 stages:
 - stage: TerraformPlan
