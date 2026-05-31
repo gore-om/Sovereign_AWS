@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_secretsmanager_secret" "db" {
-  name                    = "${var.project_name}-db-secret"
+  name = "${var.project_name}-db-secret-v2"
   recovery_window_in_days = 0
 }
 
