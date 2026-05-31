@@ -147,6 +147,10 @@ function validatePassword(password) {
   return password.length >= 8 && new Set(password).size >= 8;
 }
 
+app.get("/ping", (_request, response) => {
+  response.status(200).json({ status: "ok" });
+});
+
 app.get("/health", async (_request, response) => {
   await pool.query("SELECT 1");
   response.json({

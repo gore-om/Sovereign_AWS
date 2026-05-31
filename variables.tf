@@ -55,7 +55,7 @@ variable "frontend_container_port" {
 
 variable "backend_health_check_path" {
   type    = string
-  default = "/"
+  default = "/ping"
 }
 
 variable "frontend_health_check_path" {
