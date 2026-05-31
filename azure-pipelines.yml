@@ -26,10 +26,11 @@ stages:
   displayName: Terraform Plan
   jobs:
   - job: plan
+    displayName: Terraform Plan
     steps:
     - checkout: self
 
-        - script: |
+    - script: |
         sudo apt-get update
         sudo apt-get install -y gnupg software-properties-common wget
         wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
@@ -53,10 +54,11 @@ stages:
         TF_VAR_db_password: $(DB_PASSWORD)
 
 - stage: TerraformApply
-  displayName: Terraform Apply Infra
+  displayName: Terraform Apply
   dependsOn: TerraformPlan
   jobs:
   - job: apply
+    displayName: Terraform Apply
     steps:
     - checkout: self
 
@@ -69,7 +71,7 @@ stages:
         sudo apt-get install -y terraform
         terraform version
       displayName: Install Terraform
-      
+
     - script: |
         terraform init
         terraform apply -auto-approve
@@ -86,6 +88,7 @@ stages:
   dependsOn: TerraformApply
   jobs:
   - job: docker
+    displayName: Build and Push
     steps:
     - checkout: self
 
@@ -113,6 +116,7 @@ stages:
   dependsOn: BuildAndPush
   jobs:
   - job: deploy
+    displayName: Deploy ECS
     steps:
     - script: |
         aws ecs update-service \
