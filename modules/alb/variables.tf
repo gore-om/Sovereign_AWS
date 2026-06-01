@@ -29,3 +29,8 @@ variable "frontend_health_check_path" {
 variable "alb_security_group_id" {
   type = string
 }
+
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN for HTTPS listener"
+  type        = string
+}

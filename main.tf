@@ -70,7 +70,6 @@ data "aws_subnets" "default" {
 
 module "alb" {
   source = "./modules/alb"
-
   project_name               = var.project_name
   vpc_id                     = data.aws_vpc.default.id
   subnet_ids                 = data.aws_subnets.default.ids
@@ -79,6 +78,7 @@ module "alb" {
   frontend_port              = var.frontend_container_port
   backend_health_check_path  = var.backend_health_check_path
   frontend_health_check_path = var.frontend_health_check_path
+  acm_certificate_arn        = var.acm_certificate_arn
 
   depends_on = [module.security_groups]
 }
