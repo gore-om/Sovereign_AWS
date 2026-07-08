@@ -69,7 +69,7 @@ data "aws_subnets" "default" {
 }
 
 module "alb" {
-  source = "./modules/alb"
+  source                     = "./modules/alb"
   project_name               = var.project_name
   vpc_id                     = data.aws_vpc.default.id
   subnet_ids                 = data.aws_subnets.default.ids
